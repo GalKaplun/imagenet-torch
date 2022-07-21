@@ -1,0 +1,7 @@
+multirun
+outputs
+data/*
+files
+__pycache__*
+*.pyc
+*.pyo

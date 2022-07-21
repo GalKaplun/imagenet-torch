@@ -1,0 +1,62 @@
+{
+	"name": "Momo Dev Container",
+	// Docker image build arguments
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": ".", // The location where the docker build is running
+		"args": { 
+			"USERNAME":"${localEnv:USER}",
+			"USER_UID":"48214",
+			"USER_GID":"1000",
+			"HOME": "${localEnv:HOME}"
+		}
+	},
+	"runArgs":["--user=48214:1000"],
+	"containerEnv": {
+		"PYTHONPATH": "${containerWorkspaceFolder}",
+		"DISPLAY": "${localEnv:DISPLAY}",
+		"AWS_ROLE": "sagemaker-objd",
+		"AWS_SHARED_CREDENTIALS_FILE": "/tmp/.aws/credentials",
+		"AWS_CONFIG_FILE": "/tmp/.aws/config",
+		"LOGNAME": "noasc",
+		"NEPTUNE_API_TOKEN": "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vbmVwdHVuZS5zZGRjLm1vYmlsZXllLmNvbSIsImFwaV91cmwiOiJodHRwczovL25lcHR1bmUuc2RkYy5tb2JpbGV5ZS5jb20iLCJhcGlfa2V5IjoiN2I0YTdhNDgtYWE4Ny00NTEzLWI1NjAtNzM2NWFiMTE2ZjYwIn0="
+	},
+	// Add storage mounts to be accessed by the container
+	// "mounts": ["source=/path/on/machine,target=/path/on/container,type=bind,consistency=cached"],
+	"mounts": [
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached","source=${localEnv:HOME}/.Xauthority,target=${localEnv:HOME}/.Xauthority,type=bind,consistency=cached",
+		"source=/homes/noasc,target=/homes/noasc,type=bind,consistency=cached",
+		"source=/homes/nadavj,target=/homes/nadavj,type=bind,consistency=cached",
+		"source=/homes/danielka,target=/homes/danielka,type=bind,consistency=cached",
+		"source=/mobileye/algo_OBJD_NVME,target=/mobileye/algo_OBJD_NVME,type=bind,consistency=cached",
+		"source=/mobileye/algo_OBJD,target=/mobileye/algo_OBJD,type=bind,consistency=cached",
+		"source=/homes/noasc/.aws,target=/tmp/.aws,type=bind,consistency=cached",
+	],
+	// Set *default* container specific settings.json values on container create.
+	// These settings are related to VS Code and it extensions
+	"settings": {
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"python.pythonPath": "/usr/local/conda/envs/menta/bin/python",
+		"python.condaPath": "/usr/local/conda/condabin/conda",
+		"python.venvPath": "/usr/local/conda/envs/menta",
+		"python.terminal.activateEnvironment": true,
+		"python.terminal.activateEnvInCurrentTerminal": true,
+		"terminal.integrated.cwd": "${containerWorkspaceFolder}",
+		"python.testing.pytestPath": "/usr/local/conda/envs/menta2/bin/pytest",
+		"python.testing.unittestEnabled": false,
+		"python.testing.pytestEnabled": true,
+		"python.formatting.autopep8Path": "/usr/local/conda/envs/menta2/bin/autopep8",
+		"python.formatting.provider":"autopep8",
+		// "python.testing.cwd": "${containerWorkspaceFolder}/tests" // Path to tests dir
+		//  Add list of pytest arguments, which will run when running the default tests, for example:
+		// "python.testing.pytestArgs": ["--ignore=tests/path/to/tests"],	
+	},
+
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		"ms-python.python",
+		"ms-python.jupyter",
+		"eamodio.gitlens",
+		"donjayamanne.githistory"
+	]
+}

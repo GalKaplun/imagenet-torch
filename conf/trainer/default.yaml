@@ -1,0 +1,6 @@
+_target_: pytorch_lightning.Trainer
+
+accelerator: gpu
+devices: 1
+max_epochs: 90
+val_check_interval: 1.0

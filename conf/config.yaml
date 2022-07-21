@@ -1,0 +1,13 @@
+defaults:
+  - trainer: default.yaml
+  - datamodule: datamodule.yaml
+  - model: net.yaml
+  - logger: wandb.yaml
+  - hydra: default.yaml
+  - _self_
+
+work_dir: ${hydra:runtime.cwd}
+data_dir: ${work_dir}/data/
+
+# path to folder with data
+run_id: null
