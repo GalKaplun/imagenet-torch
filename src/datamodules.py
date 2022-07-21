@@ -9,6 +9,26 @@ from src.cifar5m import CIFAR5m
 from src.data_utils import CustomDataset
 import torchvision.datasets as datasets
 
+
+def get_imagenet(data_path, train, no_transform=False):
+    mean, std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+    if train:
+        transform = transforms.Compose(
+            [
+                transforms.RandomCrop(224, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(mean, std),
+            ]
+        )
+    else:
+        transform = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(mean, std)]
+        )
+    if no_transform:
+        transform = None
+    return datasets.ImageFolder(root=data_path, transform=transform)
+
 def get_all_cinic():
     cinic_mean = [0.47889522, 0.47227842, 0.43047404]
     cinic_std = [0.24205776, 0.23828046, 0.25874835]
@@ -36,7 +56,6 @@ def get_cinic(is_train, root_dir='/galk/ensemble/data/cinic-10/'):
         test_dataset = datasets.ImageFolder(root=os.path.join(root_dir, 'test'), transform=transform)
         return test_dataset
 
-
 def get_cifar5m():
 
     mean = (0.4555, 0.4362, 0.3415)
@@ -50,7 +69,6 @@ def get_cifar5m():
         ]
     )
     return CIFAR5m(data_dir=None, transform=transform)
-
 
 def get_cifar(data_path, train, no_transform=False):
     mean, std = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
@@ -72,45 +90,34 @@ def get_cifar(data_path, train, no_transform=False):
     return CIFAR10(data_path, train=train, transform=transform, download=True)
 
 
-def get_noisy_cifar(data_path):
-    reg_cifar = get_cifar(data_path, train=True)
-
-    # targets = np.fromfile('/mobileye/algo_Research_05/gal/code/repos/ensembling/files/noisy_labels.npy',
-                        #   dtype='int64')
-    targets = np.random.randint(0, 10, 50000)
-    return CustomDataset(data_path, reg_cifar, targets=targets, original_targets=reg_cifar.targets)
-
-
 class DataModule(pl.LightningDataModule):
     def __init__(
         self,
         data_dir: str = None,
         batch_size: int = 256,
         num_workers: int = 4,
-        add_noise: bool = False,
-        dataset: str = 'cifar10'
+        dataset: str = 'imagenet'
     ):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.add_noise = add_noise
         self.dataset = dataset
 
     def setup(self, stage=None):
         if self.dataset.lower() == 'cifar10':
-            if self.add_noise:
-                self.train_set = get_noisy_cifar(data_path=self.data_dir)
-            else:
-                self.train_set = get_cifar(data_path=self.data_dir, train=True)
+            self.train_set = get_cifar(data_path=self.data_dir, train=True)
+            self.val_set = get_cifar(data_path=self.data_dir, train=False)
         elif self.dataset.lower() == 'cifar5m':
             self.train_set = get_cifar5m()
-        if self.dataset.lower() == 'cinic':
+            self.val_set = get_cifar(data_path=self.data_dir, train=False)
+        elif self.dataset.lower() == 'cinic':
             self.train_set = get_all_cinic()
-            if self.add_noise:
-                self.train_set = CustomDataset(root='/galk/ensemble/data/cinic-10/all/', data=self.train_set,
-                                targets=np.random.randint(0, 10, len(self.train_set)))
-        self.val_set = get_cifar(data_path=self.data_dir, train=False)
+            self.val_set = get_cifar(data_path=self.data_dir, train=False)
+        elif self.dataset.lower() == 'imagenet':
+            self.train_set = get_imagenet(data_path=self.data_dir, train=True)
+            self.val_set = get_imagenet(data_path=self.data_dir, train=False)
+        
 
     def train_dataloader(self):
         print(self.batch_size)
@@ -118,10 +125,10 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(
             self.train_set,
             batch_size=self.batch_size,
-            shuffle=not self.add_noise,
+            shuffle=True,
             num_workers=self.num_workers,
             pin_memory=True,
-            prefetch_factor=2
+            prefetch_factor=2 #todo check if this is best
         )
 
     def val_dataloader(self):
@@ -130,4 +137,4 @@ class DataModule(pl.LightningDataModule):
                           shuffle=False,
                           num_workers=self.num_workers,
                           pin_memory=True,
-                          prefetch_factor=2)
+                          prefetch_factor=2) # todo check if this is best

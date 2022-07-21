@@ -1,10 +1,9 @@
-_target_: src.models.ImageNetModel
+_target_: src.models.LitModel
 
 arch: Resnet18
 learning_rate: 0.1
 weight_decay: 5e-4
 schedule: cos
-ensemble: False
 
 max_epochs: ${trainer.max_epochs}
 dataset: ${datamodule.dataset}

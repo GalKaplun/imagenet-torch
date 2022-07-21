@@ -5,7 +5,7 @@ FROM pytorchlightning/pytorch_lightning
 
 # TODO [noasc] what is it?
 #RUN echo me.docker:x:48214:1000::/home/me.docker:/bin/bash >> /etc/passwd
-# docker run --rm -it -v `pwd`:/galk/ensemble --gpus="device=3" --shm-size 64g --ipc host dens
+# docker run --rm -it -v `pwd`:/ml/imagenet/ --gpus="device=3" --shm-size 64g --ipc host imgnt
 
 # TODO [noasc] why installing the packages in the base env and then creating a new env named 'test_env'?
 RUN pip install wandb

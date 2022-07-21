@@ -60,57 +60,30 @@ class MicroCnn(nn.Module):
         return x
 
 
-def get_model(model_name):
-    if model_name.lower() == 'resnet18':
-        return modified_res18()
-    elif model_name.lower() == 'mini_cnn':
-        return MicroCnn(width=32)
-    else:
-        return models.__dict__[model_name.lower()](pretrained=False, num_classes=10)
-
-def get_teachers(teach_arch, teach_dir, max_teachers):
-    from glob import glob
-    teachers = []
-    for i, teacher_checkpoint in enumerate(glob(os.path.join(teach_dir, '*', 'last.ckpt'))):
-        if i >= max_teachers:
-            break
-        teacher = get_model(teach_arch)
-        state_dict = torch.load(teacher_checkpoint)["state_dict"]
-        state_dict = {k[6:]: v for k, v in state_dict.items()}
-        teacher.load_state_dict(state_dict)
-        teacher.eval()
-        for param in teacher.parameters():
-            param.requires_grad = False
-        teacher.cuda()
-        teachers += [teacher]
-    return teachers
+def get_model(model_name, is_imagenet=True):
+    if is_imagenet:
+       return  models.__dict__[model_name.lower()](pretrained=False, num_classes=1000)
+       
+    else: # cifar models
+        if model_name.lower() == 'resnet18':
+            return modified_res18()
+        elif model_name.lower() == 'mini_cnn':
+            return MicroCnn(width=32)
 
 
-class Cifar10Model(pl.LightningModule):
+class LitModel(pl.LightningModule):
     def __init__(
         self,
-        arch: str = "Resnet18",
+        arch: str = "resnet18",
         learning_rate: float = 1e-1,
         weight_decay: float = 1e-4,
         max_epochs: int = 50,
         schedule: str = 'step',
-        teach_arch: str = 'non',
-        teach_dir: str = '',
-        hard_labels: bool = True,
-        ensemble: bool = False,
-        max_teachers: int = 1,
         dataset: str = 'cifar10',
-        half_precision: str = None,
     ):
         super().__init__()
         self.criterion = torch.nn.CrossEntropyLoss()
         self.model = get_model(arch)
-        if teach_arch.lower() != 'non':
-            self.teachers = get_teachers(teach_arch, teach_dir, max_teachers)
-        else:
-            self.teachers = None
-        self.hard_labels = hard_labels
-        self.ensemble = ensemble
 
         self.train_acc = Accuracy()
         self.pred_accs = Accuracy()
@@ -131,25 +104,6 @@ class Cifar10Model(pl.LightningModule):
 
     def process_batch(self, batch, stage="train"):
         images, labels = batch
-        if stage == "train" and self.teachers is not None:
-            if self.ensemble:
-                labels = None
-                with torch.no_grad():
-                    for curr_teacher in self.teachers:
-                        if labels is None:
-                            labels = curr_teacher(images)
-                        else:
-                            labels += curr_teacher(images)
-                    if self.hard_labels:
-                        labels = torch.argmax(labels, dim=1)
-            else:
-                perm = torch.randperm(len(self.teachers))
-                idx = perm[0]
-                curr_teacher = self.teachers[idx]
-                with torch.no_grad():
-                    labels = curr_teacher(images)
-                    if self.hard_labels:
-                        labels = torch.argmax(labels, dim=1)
         logits = self.forward(images)
         probs = softmax(logits, dim=1)
         loss = self.criterion(logits, labels)
