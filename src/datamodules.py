@@ -14,7 +14,8 @@ def get_imagenet(data_path, train, no_transform=False):
     mean, std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
     if train:
         transform = transforms.Compose(
-            [
+            [   
+                transforms.Resize(256),
                 transforms.RandomCrop(224, padding=4),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
@@ -23,10 +24,16 @@ def get_imagenet(data_path, train, no_transform=False):
         )
     else:
         transform = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(mean, std)]
+            [   
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(mean, std)]
         )
     if no_transform:
         transform = None
+    
+    data_path = os.path.join(data_path, 'imagenet', 'train' if train else 'val')
     return datasets.ImageFolder(root=data_path, transform=transform)
 
 def get_all_cinic():
@@ -96,6 +103,7 @@ class DataModule(pl.LightningDataModule):
         data_dir: str = None,
         batch_size: int = 256,
         num_workers: int = 4,
+        prefetch_factor: int = 2,
         dataset: str = 'imagenet'
     ):
         super().__init__()
@@ -103,6 +111,7 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.dataset = dataset
+        self.prefetch_factor = prefetch_factor
 
     def setup(self, stage=None):
         if self.dataset.lower() == 'cifar10':
@@ -135,6 +144,6 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.val_set,
                           batch_size=self.batch_size,
                           shuffle=False,
-                          num_workers=self.num_workers,
+                          num_workers=4,
                           pin_memory=True,
-                          prefetch_factor=2) # todo check if this is best
+                          prefetch_factor=self.prefetch_factor) # todo check if this is best

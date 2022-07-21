@@ -45,6 +45,7 @@ def train(config: DictConfig):
     config.model.learning_rate = config.model.learning_rate * (config.datamodule.batch_size / 256) # scale learning rate by batch size
     lr_monitor = LearningRateMonitor(logging_interval=lr_log_interval)
 
+    print(config.trainer)
     trainer: Trainer = hydra.utils.instantiate(
         config.trainer,
         logger=logger,
@@ -53,6 +54,7 @@ def train(config: DictConfig):
         default_root_dir=f'{save_keyword}/checkpoints{run_id}',
         val_check_interval=val_check_interval
     )
+    print(f'precision {trainer.precision}')
     
 
     log.info(f"Instantiating model <{config.model._target_}>")

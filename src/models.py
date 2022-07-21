@@ -63,7 +63,7 @@ class MicroCnn(nn.Module):
 def get_model(model_name, is_imagenet=True):
     if is_imagenet:
        return  models.__dict__[model_name.lower()](pretrained=False, num_classes=1000)
-       
+
     else: # cifar models
         if model_name.lower() == 'resnet18':
             return modified_res18()
@@ -84,6 +84,9 @@ class LitModel(pl.LightningModule):
         super().__init__()
         self.criterion = torch.nn.CrossEntropyLoss()
         self.model = get_model(arch)
+        #move model to channels last
+        self.model = self.model.to(memory_format=torch.channels_last)
+        
 
         self.train_acc = Accuracy()
         self.pred_accs = Accuracy()
