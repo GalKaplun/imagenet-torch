@@ -11,3 +11,4 @@ data_dir: ${work_dir}/data/
 
 # path to folder with data
 run_id: null
+cudnn_benchmark: null

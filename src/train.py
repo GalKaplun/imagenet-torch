@@ -34,6 +34,10 @@ def train(config: DictConfig):
 
     save_keyword = config.datamodule.dataset.lower()
 
+    if config.cudnn_benchmark:
+        import torch
+        torch.backends.cudnn.benchmark = True
+
     save_path = f'/ml/imagenet/models/{config.datamodule.dataset.lower()}/{save_keyword}/{config.model.arch}-{run_id}/'
 
     checkpoint_callback = ModelCheckpoint(dirpath=save_path,
@@ -45,7 +49,6 @@ def train(config: DictConfig):
     config.model.learning_rate = config.model.learning_rate * (config.datamodule.batch_size / 256) # scale learning rate by batch size
     lr_monitor = LearningRateMonitor(logging_interval=lr_log_interval)
 
-    print(config.trainer)
     trainer: Trainer = hydra.utils.instantiate(
         config.trainer,
         logger=logger,
